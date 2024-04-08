@@ -9,6 +9,7 @@ from scipy.signal import savgol_filter
 
 from ValueMapVisualizer import ValueMapVisualizer
 from VoxelIndexingWrapper import VoxelIndexingWrapper
+from rlbench_env import VoxPoserRLBench
 
 EE_ALIAS = ['ee', 'endeffector', 'end_effector', 'end effector', 'gripper', 'hand']
 TABLE_ALIAS = ['table', 'desk', 'workstation', 'work_station', 'work station', 'workspace', 'work_space', 'work space']
@@ -51,6 +52,7 @@ visualizer_config = {
 latest_action = None
 
 visualizer = ValueMapVisualizer(visualizer_config)
+env = VoxPoserRLBench(visualizer=visualizer)
 
 
 def get_clock_time(milliseconds=False):
@@ -72,27 +74,27 @@ def calc_curvature(path):
     curvature[np.isnan(curvature)] = 0
     return curvature
 
-def get_ee_pose():
-    assert latest_obs is not None, "Please reset the environment first"
-    return latest_obs.gripper_pose
+# def get_ee_pose():
+#     assert latest_obs is not None, "Please reset the environment first"
+#     return latest_obs.gripper_pose
 
-def get_ee_pos():
-    return get_ee_pose()[:3]
+# def get_ee_pos():
+#     return get_ee_pose()[:3]
 
-def get_ee_quat():
-    return get_ee_pose()[3:]
+# def get_ee_quat():
+#     return get_ee_pose()[3:]
 
-def get_last_gripper_action():
-    """
-    Returns the last gripper action.
+# def get_last_gripper_action():
+#     """
+#     Returns the last gripper action.
 
-    Returns:
-        float: The last gripper action.
-    """
-    if latest_action is not None:
-        return latest_action[-1]
-    else:
-        return init_obs.gripper_open
+#     Returns:
+#         float: The last gripper action.
+#     """
+#     if latest_action is not None:
+#         return latest_action[-1]
+#     else:
+#         return init_obs.gripper_open
 
 
 def _get_default_voxel_map(type='target'):
@@ -105,10 +107,10 @@ def _get_default_voxel_map(type='target'):
       elif type == 'velocity':
         voxel_map = np.ones((_cfg['map_size'], _cfg['map_size'], _cfg['map_size']))
       elif type == 'gripper':
-        voxel_map = np.ones((_cfg['map_size'], _cfg['map_size'], _cfg['map_size'])) * get_last_gripper_action()
+        voxel_map = np.ones((_cfg['map_size'], _cfg['map_size'], _cfg['map_size'])) * env.get_last_gripper_action()
       elif type == 'rotation':
         voxel_map = np.zeros((_cfg['map_size'], _cfg['map_size'], _cfg['map_size'], 4))
-        voxel_map[:, :, :] = get_ee_quat()
+        voxel_map[:, :, :] = env.get_ee_quat()
       else:
         raise ValueError('Unknown voxel map type: {}'.format(type))
       voxel_map = VoxelIndexingWrapper(voxel_map)
@@ -126,8 +128,8 @@ def voxel2pc(voxels, voxel_bounds_robot_min, voxel_bounds_robot_max, map_size):
   return pc
 
 def _voxel_to_world(voxel_xyz):
-    _voxels_bounds_robot_min = _env.workspace_bounds_min.astype(np.float32)
-    _voxels_bounds_robot_max = _env.workspace_bounds_max.astype(np.float32)
+    _voxels_bounds_robot_min = env.workspace_bounds_min.astype(np.float32)
+    _voxels_bounds_robot_max = env.workspace_bounds_max.astype(np.float32)
     _map_size = _map_size
     world_xyz = voxel2pc(voxel_xyz, _voxels_bounds_robot_min, _voxels_bounds_robot_max, _map_size)
     return world_xyz
@@ -152,13 +154,13 @@ def pc2voxel_map(points, voxel_bounds_robot_min, voxel_bounds_robot_max, map_siz
 def _points_to_voxel_map(points):
     """convert points in world frame to voxel frame, voxelize, and return the voxelized points"""
     _points = points.astype(np.float32)
-    _voxels_bounds_robot_min = _env.workspace_bounds_min.astype(np.float32)
-    _voxels_bounds_robot_max = _env.workspace_bounds_max.astype(np.float32)
+    _voxels_bounds_robot_min = env.workspace_bounds_min.astype(np.float32)
+    _voxels_bounds_robot_max = env.workspace_bounds_max.astype(np.float32)
     _map_size = _map_size
     return pc2voxel_map(_points, _voxels_bounds_robot_min, _voxels_bounds_robot_max, _map_size)
 
 def _get_scene_collision_voxel_map(self):
-    collision_points_world, _ = _env.get_scene_3d_obs(ignore_robot=True)
+    collision_points_world, _ = env.get_scene_3d_obs(ignore_robot=True)
     collision_voxel = _points_to_voxel_map(collision_points_world)
     return collision_voxel
 
