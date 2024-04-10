@@ -1,6 +1,7 @@
 
-# Given point cloud and gripper location, object target location
+# Given a point cloud and gripper location, object target location
 # Get robot path trajectory to reach target location
+
 import datetime
 import time
 import numpy as np
@@ -442,4 +443,5 @@ def execute(affordance_map=None, avoidance_map=None, rotation_map=None,
 
 
 if __name__ == "__main__":
+    
     execute()
