@@ -27,7 +27,7 @@ config = SimpleNamespace(**planner_config)
 print(start_pos)
 _planner = PathPlanner(config, map_size=map_size)
 
-path_voxel, planner_info = _planner.optimize(start_pos, _affordance_map, _avoidance_map,object_centric=False)
+path_voxel, planner_info = _planner.optimize(start_pos, _affordance_map, _avoidance_map, object_centric=False)
 
 print(path_voxel)
 print(planner_info)
