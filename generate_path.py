@@ -347,6 +347,7 @@ def optimize(start_pos: np.ndarray, target_map: np.ndarray, obstacle_map: np.nda
         print(f'[planners.py | {get_clock_time(milliseconds=True)}] start optimizing, start_pos: {start_pos}')
         for i in range(config.max_steps):
             # calculate all nearby voxels around current position
+            print(current_pos)
             all_nearby_voxels = _calculate_nearby_voxel(current_pos, object_centric=object_centric)
             # calculate the score of all nearby voxels
             nearby_score = _costmap[all_nearby_voxels[:, 0], all_nearby_voxels[:, 1], all_nearby_voxels[:, 2]]
