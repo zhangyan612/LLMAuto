@@ -50,9 +50,10 @@ class PathPlanner:
         # optimize
         print(f'[planners.py | {get_clock_time(milliseconds=True)}] start optimizing, start_pos: {start_pos}')
         for i in range(self.config.max_steps):
-            # calculate all nearby voxels around current position
             print(current_pos)
+            # calculate all nearby voxels around current position
             all_nearby_voxels = self._calculate_nearby_voxel(current_pos, object_centric=object_centric)
+            print(all_nearby_voxels)
             # calculate the score of all nearby voxels
             nearby_score = _costmap[all_nearby_voxels[:, 0], all_nearby_voxels[:, 1], all_nearby_voxels[:, 2]]
             # Find the minimum cost voxel
@@ -141,7 +142,7 @@ class PathPlanner:
         path_trimmed = path[1:-1]
         skip_ratio = None
         if len(path_trimmed) > 1:
-            target_spacing = int(self.config['target_spacing'] * self.map_size / 100)
+            target_spacing = int(self.config.target_spacing * self.map_size / 100)
             length = np.linalg.norm(path_trimmed[1:] - path_trimmed[:-1], axis=1).sum()
             if length > target_spacing:
                 curr_spacing = np.linalg.norm(path_trimmed[1:] - path_trimmed[:-1], axis=1).mean()
@@ -162,7 +163,7 @@ class PathPlanner:
             path = np.append(path, [closest_target], axis=0)
         # space out path more if task is object centric (so that we can push faster)
         if object_centric:
-            k = self.config['pushing_skip_per_k']
+            k = self.config.pushing_skip_per_k
             path = np.concatenate([path[k:-1:k], path[-1:]])
         path = path.clip(0, self.map_size-1)
         return path
