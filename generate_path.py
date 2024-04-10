@@ -56,8 +56,9 @@ latest_action = None
 visualizer = ValueMapVisualizer(visualizer_config)
 # env = VoxPoserRLBench(visualizer=visualizer)
 # visualizer.update_bounds(self.workspace_bounds_min, self.workspace_bounds_max)
-workspace_bounds_min = [-0.27499999 -0.65500004  0.75199986]
-workspace_bounds_max = [0.77499999 0.65500004 1.75199986]
+workspace_bounds_min = np.array([-0.27499999, -0.65500004,  0.75199986], dtype=np.float32)
+workspace_bounds_max = np.array([0.77499999, 0.65500004, 1.75199986], dtype=np.float32)
+visualizer.update_bounds(workspace_bounds_min, workspace_bounds_max)
 
 def get_clock_time(milliseconds=False):
     curr_time = datetime.datetime.now()
