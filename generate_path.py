@@ -7,7 +7,7 @@ import time
 import numpy as np
 from scipy.ndimage import distance_transform_edt, gaussian_filter
 from scipy.signal import savgol_filter
-
+from types import SimpleNamespace
 from ValueMapVisualizer import ValueMapVisualizer
 # from VoxelIndexingWrapper import VoxelIndexingWrapper
 # from rlbench_env import VoxPoserRLBench
@@ -43,6 +43,7 @@ config = {
     "max_curvature": 3,
     "pushing_skip_per_k": 5
 }
+config = SimpleNamespace(**config)
 
 visualizer_config = {
   "save_dir": "./visualizations",
@@ -129,8 +130,8 @@ def voxel2pc(voxels, voxel_bounds_robot_min, voxel_bounds_robot_max, map_size):
   return pc
 
 def _voxel_to_world(voxel_xyz):
-    _voxels_bounds_robot_min = env.workspace_bounds_min.astype(np.float32)
-    _voxels_bounds_robot_max = env.workspace_bounds_max.astype(np.float32)
+    _voxels_bounds_robot_min = [-0.27499999, -0.65500004,  0.75199986] #env.workspace_bounds_min.astype(np.float32)
+    _voxels_bounds_robot_max = [0.77499999, 0.65500004, 1.75199986] #env.workspace_bounds_max.astype(np.float32)
     _map_size = _map_size
     world_xyz = voxel2pc(voxel_xyz, _voxels_bounds_robot_min, _voxels_bounds_robot_max, _map_size)
     return world_xyz
@@ -250,13 +251,13 @@ def _calculate_nearby_voxel(current_pos, object_centric=False):
         all_nearby_voxels = np.unique(all_nearby_voxels, axis=0)
         return all_nearby_voxels
 
-def _get_stop_criteria(self):
+def _get_stop_criteria():
     def no_nearby_equal_criteria(current_pos, costmap, stop_threshold):
         """
         Do not stop if there is a nearby voxel with cost less than current cost + stop_threshold.
         """
         assert np.isnan(costmap).sum() == 0, 'costmap contains nan'
-        current_pos_discrete = current_pos.round().clip(0, self.map_size - 1).astype(int)
+        current_pos_discrete = current_pos.round().clip(0, _map_size - 1).astype(int)
         current_cost = costmap[current_pos_discrete[0], current_pos_discrete[1], current_pos_discrete[2]]
         nearby_locs = _calculate_nearby_voxel(current_pos, object_centric=False)
         nearby_equal = np.any(costmap[nearby_locs[:, 0], nearby_locs[:, 1], nearby_locs[:, 2]] < current_cost + stop_threshold)
@@ -322,6 +323,7 @@ def optimize(start_pos: np.ndarray, target_map: np.ndarray, obstacle_map: np.nda
             path: (n, 3) np.ndarray, path
             info: dict, info
         """
+
         print(f'[planners.py | {get_clock_time(milliseconds=True)}] start')
         info = dict()
         # make copies
@@ -383,7 +385,7 @@ def optimize(start_pos: np.ndarray, target_map: np.ndarray, obstacle_map: np.nda
 
 
 def execute(affordance_map, avoidance_map, rotation_map, velocity_map, gripper_map):
-    movable_obs = {'name': 'gripper', 'position': [52, 49, 71], 'aabb': [[52, 49, 71],[52, 49, 71]], '_position_world': [ 0.27849087, -0.00815093,  1.47194481]}
+    movable_obs = {'name': 'gripper', 'position': [52.0, 49.0, 71.0], 'aabb': [[52.0, 49.0, 71.0],[52.0, 49.0, 71.0]], '_position_world': [ 0.27849087, -0.00815093,  1.47194481]}
 
     # initialize default voxel maps if not specified
     object_centric = (not movable_obs['name'] in EE_ALIAS)
@@ -431,5 +433,4 @@ if __name__ == "__main__":
     _rotation_map  = np.load("rotation_map.npy")
     _velocity_map = np.load("velocity_map.npy")
     _gripper_map = np.load("gripper_map.npy")
-
     execute(_affordance_map, _avoidance_map, _rotation_map, _velocity_map, _gripper_map)
