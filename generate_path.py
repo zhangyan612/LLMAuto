@@ -9,8 +9,8 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter
 from scipy.signal import savgol_filter
 
 from ValueMapVisualizer import ValueMapVisualizer
-from VoxelIndexingWrapper import VoxelIndexingWrapper
-from rlbench_env import VoxPoserRLBench
+# from VoxelIndexingWrapper import VoxelIndexingWrapper
+# from rlbench_env import VoxPoserRLBench
 
 EE_ALIAS = ['ee', 'endeffector', 'end_effector', 'end effector', 'gripper', 'hand']
 TABLE_ALIAS = ['table', 'desk', 'workstation', 'work_station', 'work station', 'workspace', 'work_space', 'work space']
@@ -53,7 +53,7 @@ visualizer_config = {
 latest_action = None
 
 visualizer = ValueMapVisualizer(visualizer_config)
-env = VoxPoserRLBench(visualizer=visualizer)
+# env = VoxPoserRLBench(visualizer=visualizer)
 
 
 def get_clock_time(milliseconds=False):
@@ -98,25 +98,25 @@ def calc_curvature(path):
 #         return init_obs.gripper_open
 
 
-def _get_default_voxel_map(type='target'):
-    """returns default voxel map (defaults to current state)"""
-    def fn_wrapper():
-      if type == 'target':
-        voxel_map = np.zeros((_cfg['map_size'], _cfg['map_size'], _cfg['map_size']))
-      elif type == 'obstacle':  # for LLM to do customization
-        voxel_map = np.zeros((_cfg['map_size'], _cfg['map_size'], _cfg['map_size']))
-      elif type == 'velocity':
-        voxel_map = np.ones((_cfg['map_size'], _cfg['map_size'], _cfg['map_size']))
-      elif type == 'gripper':
-        voxel_map = np.ones((_cfg['map_size'], _cfg['map_size'], _cfg['map_size'])) * env.get_last_gripper_action()
-      elif type == 'rotation':
-        voxel_map = np.zeros((_cfg['map_size'], _cfg['map_size'], _cfg['map_size'], 4))
-        voxel_map[:, :, :] = env.get_ee_quat()
-      else:
-        raise ValueError('Unknown voxel map type: {}'.format(type))
-      voxel_map = VoxelIndexingWrapper(voxel_map)
-      return voxel_map
-    return fn_wrapper
+# def _get_default_voxel_map(type='target'):
+#     """returns default voxel map (defaults to current state)"""
+#     def fn_wrapper():
+#       if type == 'target':
+#         voxel_map = np.zeros((_cfg['map_size'], _cfg['map_size'], _cfg['map_size']))
+#       elif type == 'obstacle':  # for LLM to do customization
+#         voxel_map = np.zeros((_cfg['map_size'], _cfg['map_size'], _cfg['map_size']))
+#       elif type == 'velocity':
+#         voxel_map = np.ones((_cfg['map_size'], _cfg['map_size'], _cfg['map_size']))
+#       elif type == 'gripper':
+#         voxel_map = np.ones((_cfg['map_size'], _cfg['map_size'], _cfg['map_size'])) * env.get_last_gripper_action()
+#       elif type == 'rotation':
+#         voxel_map = np.zeros((_cfg['map_size'], _cfg['map_size'], _cfg['map_size'], 4))
+#         voxel_map[:, :, :] = env.get_ee_quat()
+#       else:
+#         raise ValueError('Unknown voxel map type: {}'.format(type))
+#       voxel_map = VoxelIndexingWrapper(voxel_map)
+#       return voxel_map
+#     return fn_wrapper
 
 def voxel2pc(voxels, voxel_bounds_robot_min, voxel_bounds_robot_max, map_size):
   """de-voxelize a voxel"""
@@ -152,18 +152,18 @@ def pc2voxel_map(points, voxel_bounds_robot_min, voxel_bounds_robot_max, map_siz
       voxel_map[points_vox[i, 0], points_vox[i, 1], points_vox[i, 2]] = 1
   return voxel_map
 
-def _points_to_voxel_map(points):
-    """convert points in world frame to voxel frame, voxelize, and return the voxelized points"""
-    _points = points.astype(np.float32)
-    _voxels_bounds_robot_min = env.workspace_bounds_min.astype(np.float32)
-    _voxels_bounds_robot_max = env.workspace_bounds_max.astype(np.float32)
-    _map_size = _map_size
-    return pc2voxel_map(_points, _voxels_bounds_robot_min, _voxels_bounds_robot_max, _map_size)
+# def _points_to_voxel_map(points):
+#     """convert points in world frame to voxel frame, voxelize, and return the voxelized points"""
+#     _points = points.astype(np.float32)
+#     _voxels_bounds_robot_min = env.workspace_bounds_min.astype(np.float32)
+#     _voxels_bounds_robot_max = env.workspace_bounds_max.astype(np.float32)
+#     _map_size = _map_size
+#     return pc2voxel_map(_points, _voxels_bounds_robot_min, _voxels_bounds_robot_max, _map_size)
 
-def _get_scene_collision_voxel_map(self):
-    collision_points_world, _ = env.get_scene_3d_obs(ignore_robot=True)
-    collision_voxel = _points_to_voxel_map(collision_points_world)
-    return collision_voxel
+# def _get_scene_collision_voxel_map(self):
+#     collision_points_world, _ = env.get_scene_3d_obs(ignore_robot=True)
+#     collision_voxel = _points_to_voxel_map(collision_points_world)
+#     return collision_voxel
 
 def _path2traj(self, path, rotation_map, velocity_map, gripper_map):
     """
@@ -203,26 +203,26 @@ def _path2traj(self, path, rotation_map, velocity_map, gripper_map):
       traj.append((world_xyz, rotation, velocity, gripper))
     return traj
 
-def _preprocess_avoidance_map(avoidance_map, affordance_map, movable_obs):
-    # collision avoidance
-    scene_collision_map = _get_scene_collision_voxel_map()
-    # anywhere within 15/100 indices of the target is ignored (to guarantee that we can reach the target)
-    ignore_mask = distance_transform_edt(1 - affordance_map)
-    scene_collision_map[ignore_mask < int(0.15 * _map_size)] = 0
-    # anywhere within 15/100 indices of the start is ignored
-    try:
-      ignore_mask = distance_transform_edt(1 - movable_obs['occupancy_map'])
-      scene_collision_map[ignore_mask < int(0.15 * _map_size)] = 0
-    except KeyError:
-      start_pos = movable_obs['position']
-      ignore_mask = np.ones_like(avoidance_map)
-      ignore_mask[start_pos[0] - int(0.1 * _map_size):start_pos[0] + int(0.1 * _map_size),
-                  start_pos[1] - int(0.1 * _map_size):start_pos[1] + int(0.1 * _map_size),
-                  start_pos[2] - int(0.1 * _map_size):start_pos[2] + int(0.1 * _map_size)] = 0
-      scene_collision_map *= ignore_mask
-    avoidance_map += scene_collision_map
-    avoidance_map = np.clip(avoidance_map, 0, 1)
-    return avoidance_map
+# def _preprocess_avoidance_map(avoidance_map, affordance_map, movable_obs):
+#     # collision avoidance
+#     scene_collision_map = _get_scene_collision_voxel_map()
+#     # anywhere within 15/100 indices of the target is ignored (to guarantee that we can reach the target)
+#     ignore_mask = distance_transform_edt(1 - affordance_map)
+#     scene_collision_map[ignore_mask < int(0.15 * _map_size)] = 0
+#     # anywhere within 15/100 indices of the start is ignored
+#     try:
+#       ignore_mask = distance_transform_edt(1 - movable_obs['occupancy_map'])
+#       scene_collision_map[ignore_mask < int(0.15 * _map_size)] = 0
+#     except KeyError:
+#       start_pos = movable_obs['position']
+#       ignore_mask = np.ones_like(avoidance_map)
+#       ignore_mask[start_pos[0] - int(0.1 * _map_size):start_pos[0] + int(0.1 * _map_size),
+#                   start_pos[1] - int(0.1 * _map_size):start_pos[1] + int(0.1 * _map_size),
+#                   start_pos[2] - int(0.1 * _map_size):start_pos[2] + int(0.1 * _map_size)] = 0
+#       scene_collision_map *= ignore_mask
+#     avoidance_map += scene_collision_map
+#     avoidance_map = np.clip(avoidance_map, 0, 1)
+#     return avoidance_map
 
 def normalize_map(map):
     """normalization voxel maps to [0, 1] without producing nan"""
@@ -392,29 +392,7 @@ def execute(affordance_map, avoidance_map, rotation_map, velocity_map, gripper_m
       # execute path in closed-loop
       for plan_iter in range(_cfg['max_plan_iter']):
         step_info = dict()
-        # evaluate voxel maps such that we use latest information
-        # movable_obs = movable_obs_func()
-        _affordance_map = affordance_map()
-        _avoidance_map = avoidance_map()
-        _rotation_map = rotation_map()
-        _velocity_map = velocity_map()
-        _gripper_map = gripper_map()
 
-        _affordance_map = np.load("affordance_map.npy")
-
-        _avoidance_map = np.load("avoidance_map.npy")
-
-        _rotation_map  = np.load("rotation_map.npy")
-        print(rotation_map)
-
-        _velocity_map = np.load("velocity_map.npy")
-        print(velocity_map)
-
-        gripper_map = np.load("gripper_map.npy")
-        print(gripper_map)
-
-        # preprocess avoidance map
-        _avoidance_map = _preprocess_avoidance_map(_avoidance_map, _affordance_map, movable_obs)
         # start planning
         start_pos = movable_obs['position']
         start_time = time.time()
@@ -448,5 +426,10 @@ def execute(affordance_map, avoidance_map, rotation_map, velocity_map, gripper_m
 
 
 if __name__ == "__main__":
-    
-    execute()
+    _affordance_map = np.load("affordance_map.npy")
+    _avoidance_map = np.load("avoidance_map.npy")
+    _rotation_map  = np.load("rotation_map.npy")
+    _velocity_map = np.load("velocity_map.npy")
+    _gripper_map = np.load("gripper_map.npy")
+
+    execute(_affordance_map, _avoidance_map, _rotation_map, _velocity_map, _gripper_map)
